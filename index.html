@@ -735,7 +735,8 @@
       ctx.fillText(`Y=${c.y.toFixed(2)}`, Math.min(w - 28, Math.max(m.l + 24, px)), h - 8);
       ctx.fillStyle = "#64748b";
       ctx.font = "10px system-ui, sans-serif";
-      ctx.fillText("F_Y(y) = 1 − e^(−y/2)", m.l + pw * 0.62, m.t + 10);
+      ctx.textAlign = "right";
+      ctx.fillText("F_Y(y) = 1 − e^(−y/2)", w - m.r - 4, h - m.b - 8);
     }
 
     // Gráfica 2: Barra de tramos de U2 en [0, 1]
@@ -799,12 +800,12 @@
       ctx.textAlign = "center";
       ctx.fillText(`U₂ = ${c.u2.toFixed(4)}`, Math.min(w - 44, Math.max(44, ux)), barY - 24);
 
-      // Etiquetas de extremos
+      // Etiquetas de extremos (sin solapamiento)
       ctx.fillStyle = "#64748b";
       ctx.font = "10px ui-monospace, monospace";
-      ctx.textAlign = "left"; ctx.fillText("0.00", padL, barY + barH + 28);
-      ctx.textAlign = "center"; ctx.fillText("0.10", padL + 0.10 * bw, barY + barH + 28);
-      ctx.textAlign = "right"; ctx.fillText("1.00", padL + bw, barY + barH + 28);
+      ctx.textAlign = "left"; ctx.fillText("0", padL, barY + barH + 26);
+      ctx.textAlign = "left"; ctx.fillText("0.10", padL + 0.10 * bw + 1, barY + barH + 26);
+      ctx.textAlign = "right"; ctx.fillText("1.00", padL + bw, barY + barH + 26);
     }
 
     // Gráfica 3: Acumulada F2(x) con corte en (4, 2/3)
