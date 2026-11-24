@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simulador · Proceso de Selección (Transformada Inversa)</title>
+  <style>
+    :root {
+      --bg: #f6f8fc;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --muted: #64748b;
+      --blue: #2563eb;
+      --blue-soft: #eff6ff;
+      --amber: #d97706;
+      --amber-soft: #fffbeb;
+      --violet: #7c3aed;
+      --violet-soft: #f5f3ff;
+      --green: #16a34a;
+      --green-soft: #dcfce7;
+      --red: #dc2626;
+      --red-soft: #fee2e2;
+      --radius: 14px;
+      --shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
+      --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+    }
+
+    .wrap {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 24px 18px 48px;
+    }
+
+    /* Cabecera mínima */
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      letter-spacing: -0.02em;
+    }
+
+    header p {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    button {
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border-radius: 10px;
+      padding: 9px 15px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: transform 0.08s, background 0.15s, border-color 0.15s;
+    }
+
+    button:active { transform: translateY(1px); }
+
+    .btn-primary {
+      background: var(--blue);
+      color: #fff;
+    }
+    .btn-primary:hover { background: #1d4ed8; }
+
+    .btn-soft {
+      background: #fff;
+      color: var(--text);
+      border-color: var(--border);
+    }
+    .btn-soft:hover { background: #f8fafc; border-color: #cbd5e1; }
+
+    /* Tarjetas de las 3 pruebas */
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    @media (max-width: 960px) {
+      .grid-3 { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+
+    .step-badge {
+      display: inline-block;
+      font-size: 0.74rem;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 999px;
+      margin-bottom: 8px;
+    }
+    .b-blue { background: var(--blue-soft); color: var(--blue); }
+    .b-amber { background: var(--amber-soft); color: var(--amber); }
+    .b-violet { background: var(--violet-soft); color: var(--violet); }
+
+    .card h2 {
+      margin: 0 0 10px;
+      font-size: 1.05rem;
+    }
+
+    .u-control {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+    }
+
+    .u-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      font-size: 0.88rem;
+      font-weight: 600;
+    }
+
+    .u-val {
+      font-family: var(--mono);
+      font-size: 0.95rem;
+      color: var(--blue);
+      background: #fff;
+      border: 1px solid var(--border);
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--blue);
+      cursor: pointer;
+    }
+
+    canvas.plot {
+      width: 100%;
+      display: block;
+      background: #fbfdff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 12px;
+    }
+
+    .formula-pill {
+      font-family: var(--mono);
+      font-size: 0.84rem;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      margin-bottom: 10px;
+      color: #1e293b;
+    }
+
+    .score-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding-top: 8px;
+      border-top: 1px dashed var(--border);
+      font-size: 0.9rem;
+    }
+
+    .score-big {
+      font-family: var(--mono);
+      font-size: 1.35rem;
+      font-weight: 800;
+    }
+
+    /* Resultado total del candidato */
+    .result-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 22px;
+      margin-bottom: 24px;
+    }
+
+    .sum-eq {
+      font-family: var(--mono);
+      font-size: 1.15rem;
+      font-weight: 700;
+    }
+
+    .progress-wrap {
+      flex: 1;
+      min-width: 220px;
+      max-width: 380px;
+    }
+
+    .progress-track {
+      position: relative;
+      height: 14px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: visible;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 999px;
+      transition: width 0.2s;
+    }
+
+    .cut-mark {
+      position: absolute;
+      top: -6px;
+      left: 50%; /* 7 / 14 = 50% */
+      width: 2px;
+      height: 26px;
+      background: #0f172a;
+    }
+
+    .cut-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.76rem;
+      color: var(--muted);
+      margin-top: 5px;
+      font-family: var(--mono);
+    }
+
+    .decision-pill {
+      font-size: 1rem;
+      font-weight: 800;
+      padding: 10px 18px;
+      border-radius: 999px;
+    }
+
+    .dec-yes { background: var(--green-soft); color: #166534; }
+    .dec-no { background: var(--red-soft); color: #991b1b; }
+
+    /* Bloque 250 candidatos */
+    .batch-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .batch-header h2 { margin: 0; font-size: 1.15rem; }
+
+    select {
+      font-family: inherit;
+      font-size: 0.88rem;
+      padding: 8px 10px;
+      border-radius: 9px;
+      border: 1px solid var(--border);
+      background: #fff;
+    }
+
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    @media (max-width: 640px) {
+      .kpis { grid-template-columns: 1fr; }
+    }
+
+    .kpi {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      text-align: center;
+    }
+
+    .kpi .k-lbl {
+      font-size: 0.82rem;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .kpi .k-num {
+      font-family: var(--mono);
+      font-size: 1.65rem;
+      font-weight: 800;
+      margin-top: 2px;
+    }
+
+    .kpi .k-sub {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* Cuadrícula de los 250 candidatos */
+    .dots-title {
+      font-size: 0.84rem;
+      color: var(--muted);
+      margin-bottom: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .dots-grid {
+      display: grid;
+      grid-template-columns: repeat(25, minmax(0, 1fr));
+      gap: 4px;
+      margin-bottom: 16px;
+    }
+
+    @media (max-width: 720px) {
+      .dots-grid { grid-template-columns: repeat(15, minmax(0, 1fr)); }
+    }
+
+    .dot {
+      aspect-ratio: 1 / 1;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+
+    .dot:hover {
+      transform: scale(1.25);
+      box-shadow: 0 0 0 2px #0f172a;
+      z-index: 2;
+    }
+
+    .dot.hired { background: #22c55e; }
+    .dot.rejected { background: #cbd5e1; }
+    .dot.selected { box-shadow: 0 0 0 2.5px var(--blue); }
+
+    /* Tabla compacta */
+    details {
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+    }
+
+    summary {
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: var(--blue);
+      user-select: none;
+    }
+
+    .table-scroll {
+      max-height: 290px;
+      overflow-y: auto;
+      margin-top: 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.84rem;
+      font-family: var(--mono);
+    }
+
+    th, td {
+      padding: 7px 10px;
+      border-bottom: 1px solid var(--border);
+      text-align: right;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      background: #f1f5f9;
+      font-family: var(--sans);
+      font-weight: 700;
+      color: #334155;
+    }
+
+    td:first-child, th:first-child { text-align: center; }
+    tr.row-click { cursor: pointer; }
+    tr.row-click:hover { background: #eff6ff; }
+
+    .tag-ok { color: #15803d; font-weight: 700; }
+    .tag-no { color: #b91c1c; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Simulador del Proceso de Selección</h1>
+        <p>Mueve <strong>U₁, U₂, U₃</strong> o genera candidatos al azar para ver cómo sale cada puntuación (contrata si <strong>T ≥ 7</strong>).</p>
+      </div>
+      <div class="btn-row">
+        <button class="btn-primary" id="btnRandomOne">🎲 Nuevo candidato</button>
+        <button class="btn-soft" id="btnExampleC">📌 Ejemplo del ejercicio (Inciso c)</button>
+      </div>
+    </header>
+
+    <!-- 3 PRUEBAS LADO A LADO -->
+    <section class="grid-3">
+      <!-- 1. ENTREVISTA -->
+      <article class="card">
+        <span class="step-badge b-blue">Paso 1 · Entrevista</span>
+        <h2>Exponencial → X<sub>e</sub></h2>
+
+        <div class="u-control">
+          <div class="u-row">
+            <label for="u1Range">Número aleatorio U₁</label>
+            <span class="u-val" id="u1Val">0.7129</span>
+          </div>
+          <input type="range" id="u1Range" min="0.001" max="0.999" step="0.0001" value="0.7129" />
+        </div>
+
+        <canvas id="cExp" class="plot" height="150"></canvas>
+
+        <div class="formula-pill" id="f1Text">
+          Y = −2·ln(1 − 0.7129) = 2.4959<br>
+          X<sub>e</sub> = mín(2, 3(Y + 1)) = mín(2, 10.49)
+        </div>
+
+        <div class="score-line">
+          <span>Como Y ≥ 0, <strong>siempre vale 2</strong></span>
+          <span class="score-big" style="color:var(--blue);" id="xeOut">Xₑ = 2</span>
+        </div>
+      </article>
+
+      <!-- 2. PRIMERA PRUEBA -->
+      <article class="card">
+        <span class="step-badge b-amber">Paso 2 · Primera prueba</span>
+        <h2>Tabla de erratas → X₁</h2>
+
+        <div class="u-control">
+          <div class="u-row">
+            <label for="u2Range">Número aleatorio U₂</label>
+            <span class="u-val" id="u2Val">0.5061</span>
+          </div>
+          <input type="range" id="u2Range" min="0.000" max="0.9999" step="0.0001" value="0.5061" />
+        </div>
+
+        <canvas id="cErratas" class="plot" height="150"></canvas>
+
+        <div class="formula-pill" id="f2Text">
+          Tramo: [0.4857, 0.6143)<br>
+          Resultado: <strong>4 erratas</strong>
+        </div>
+
+        <div class="score-line">
+          <span id="errataLabel">0→0 pts · 1–6→1 pt · Todas→4 pts</span>
+          <span class="score-big" style="color:var(--amber);" id="x1Out">X₁ = 1</span>
+        </div>
+      </article>
+
+      <!-- 3. SEGUNDA PRUEBA -->
+      <article class="card">
+        <span class="step-badge b-violet">Paso 3 · Segunda prueba</span>
+        <h2>Transformada inversa → X₂</h2>
+
+        <div class="u-control">
+          <div class="u-row">
+            <label for="u3Range">Número aleatorio U₃</label>
+            <span class="u-val" id="u3Val">0.0430</span>
+          </div>
+          <input type="range" id="u3Range" min="0.001" max="0.999" step="0.0001" value="0.043" />
+        </div>
+
+        <canvas id="cF2" class="plot" height="150"></canvas>
+
+        <div class="formula-pill" id="f3Text">
+          U₃ ≤ 2/3 (Tramo 1)<br>
+          X₂ = 6 · 0.0430 = 0.2580
+        </div>
+
+        <div class="score-line">
+          <span id="tramo2Hint">Corte en U₃ = 2/3 ≈ 0.6667</span>
+          <span class="score-big" style="color:var(--violet);" id="x2Out">X₂ = 0.258</span>
+        </div>
+      </article>
+    </section>
+
+    <!-- RESULTADO DEL CANDIDATO -->
+    <section class="card result-bar">
+      <div>
+        <div style="font-size:0.8rem; color:var(--muted); font-weight:600;">PUNTUACIÓN TOTAL DEL CANDIDATO</div>
+        <div class="sum-eq" id="sumEq">T = 2 + 1 + 0.258 = 3.258</div>
+      </div>
+
+      <div class="progress-wrap">
+        <div class="progress-track">
+          <div class="progress-fill" id="progFill" style="width:23.3%; background:var(--red);"></div>
+          <div class="cut-mark" title="Mínimo para contratar: 7"></div>
+        </div>
+        <div class="cut-label">
+          <span>0</span>
+          <strong>Mínimo = 7</strong>
+          <span>14</span>
+        </div>
+      </div>
+
+      <div class="decision-pill dec-no" id="decisionBadge">✗ NO CONTRATADO (H = 0)</div>
+    </section>
+
+    <!-- SIMULACIÓN DE 250 CANDIDATOS -->
+    <section class="card">
+      <div class="batch-header">
+        <div>
+          <h2>Incisos b y d · Simulación de candidatos</h2>
+          <div style="font-size:0.86rem; color:var(--muted);">Repite el proceso de arriba de forma independiente y cuenta cuántos logran T ≥ 7.</div>
+        </div>
+        <div class="btn-row">
+          <select id="batchSize" aria-label="Número de candidatos">
+            <option value="250" selected>250 candidatos (ejercicio)</option>
+            <option value="1000">1.000 candidatos</option>
+            <option value="5000">5.000 candidatos</option>
+          </select>
+          <button class="btn-primary" id="btnRunBatch">▶ Simular</button>
+        </div>
+      </div>
+
+      <div class="kpis">
+        <div class="kpi">
+          <div class="k-lbl">Contratados (∑ Hᵢ)</div>
+          <div class="k-num" style="color:var(--green);" id="kpiHired">—</div>
+          <div class="k-sub" id="kpiTotalSub">de 250 candidatos</div>
+        </div>
+        <div class="kpi">
+          <div class="k-lbl">No contratados</div>
+          <div class="k-num" style="color:#475569;" id="kpiRejected">—</div>
+          <div class="k-sub">T &lt; 7</div>
+        </div>
+        <div class="kpi">
+          <div class="k-lbl">Porcentaje estimado (100p %)</div>
+          <div class="k-num" style="color:var(--blue);" id="kpiPct">—</div>
+          <div class="k-sub">p = (∑ Hᵢ) / N · (valor exacto ≈ 38.3 %)</div>
+        </div>
+      </div>
+
+      <div class="dots-title">
+        <span><strong>Mapa visual</strong> (primeros 250): haz clic en cualquier cuadro para inspeccionarlo arriba.</span>
+        <span><span style="color:#16a34a;">■</span> Contratado (H=1) &nbsp; <span style="color:#94a3b8;">■</span> No contratado (H=0)</span>
+      </div>
+      <div class="dots-grid" id="dotsGrid"></div>
+
+      <details>
+        <summary>Ver tabla de candidatos simulados (primeros 250)</summary>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>U₂</th>
+                <th>Erratas</th>
+                <th>X₁</th>
+                <th>U₃</th>
+                <th>X₂</th>
+                <th>T = 2+X₁+X₂</th>
+                <th>H</th>
+              </tr>
+            </thead>
+            <tbody id="batchTableBody"></tbody>
+          </table>
+        </div>
+      </details>
+    </section>
+  </div>
+
+  <script>
+  (() => {
+    "use strict";
+
+    const TWO_THIRDS = 2 / 3;
+    const STEP_ERR = 0.90 / 7;
+
+    // -------------------------------------------------------------------------
+    // LÓGICA EXACTA DEL EJERCICIO (Almudena20261124.docx)
+    // -------------------------------------------------------------------------
+    function evalCandidate(u1, u2, u3) {
+      // 1. Entrevista: Y ~ Exp(lambda = 0.5) => Y = -2 ln(1 - U1); Xe = min(2, 3(Y+1)) = 2
+      const safeU1 = Math.min(0.999999, Math.max(0.000001, u1));
+      const y = -2 * Math.log(1 - safeU1);
+      const rawXe = 3 * (y + 1);
+      const xe = Math.min(2, rawXe); // siempre 2
+
+      // 2. Primera prueba (erratas): 0 si U2 < 0.10; 7 tramos de 0.90/7 para 1..6 y Todas
+      let errataIdx = 0; // 0 => 0 erratas, 1..6 => 1..6 erratas, 7 => Todas
+      let errataLabel = "0 erratas";
+      let x1 = 0;
+      let segStart = 0;
+      let segEnd = 0.10;
+
+      if (u2 >= 0.10) {
+        const k = Math.min(6, Math.floor((u2 - 0.10) / STEP_ERR)); // 0..6
+        errataIdx = k + 1;
+        segStart = 0.10 + k * STEP_ERR;
+        segEnd = 0.10 + (k + 1) * STEP_ERR;
+        if (k < 6) {
+          errataLabel = `${k + 1} errata${k === 0 ? "" : "s"}`;
+          x1 = 1;
+        } else {
+          errataLabel = "Todas";
+          x1 = 4;
+        }
+      }
+
+      // 3. Segunda prueba: F2(4) = 2/3
+      const safeU3 = Math.min(0.999999, Math.max(0.000001, u3));
+      let x2, tramo2;
+      if (safeU3 <= TWO_THIRDS) {
+        tramo2 = 1;
+        x2 = 6 * safeU3;
+      } else {
+        tramo2 = 2;
+        x2 = 8 - Math.sqrt(48 * (1 - safeU3));
+      }
+
+      const total = xe + x1 + x2;
+      const hired = total >= 7 ? 1 : 0;
+
+      return {
+        u1: safeU1, y, rawXe, xe,
+        u2, errataIdx, errataLabel, x1, segStart, segEnd,
+        u3: safeU3, tramo2, x2,
+        total, hired
+      };
+    }
+
+    // -------------------------------------------------------------------------
+    // UTILIDAD CANVAS HiDPI
+    // -------------------------------------------------------------------------
+    function prepCanvas(canvas) {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      const w = Math.max(240, Math.floor(rect.width || 320));
+      const h = parseInt(canvas.getAttribute("height"), 10) || 150;
+      if (canvas.width !== Math.floor(w * dpr) || canvas.height !== Math.floor(h * dpr)) {
+        canvas.width = Math.floor(w * dpr);
+        canvas.height = Math.floor(h * dpr);
+      }
+      const ctx = canvas.getContext("2d");
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+      return { ctx, w, h };
+    }
+
+    // Gráfica 1: F_Y(y) = 1 - e^(-y/2)
+    function drawExpPlot(c) {
+      const { ctx, w, h } = prepCanvas(document.getElementById("cExp"));
+      const m = { l: 34, r: 12, t: 14, b: 26 };
+      const pw = w - m.l - m.r;
+      const ph = h - m.t - m.b;
+      const maxY = Math.max(8, c.y + 1.5);
+      const xOf = (val) => m.l + (val / maxY) * pw;
+      const yOf = (u) => m.t + ph - u * ph;
+
+      // Ejes
+      ctx.strokeStyle = "#94a3b8";
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(m.l, m.t); ctx.lineTo(m.l, h - m.b); ctx.lineTo(w - m.r, h - m.b);
+      ctx.stroke();
+
+      // Curva F_Y(y)
+      ctx.strokeStyle = "#2563eb";
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      for (let i = 0; i <= 80; i++) {
+        const yv = (maxY * i) / 80;
+        const fv = 1 - Math.exp(-0.5 * yv);
+        if (i === 0) ctx.moveTo(xOf(yv), yOf(fv));
+        else ctx.lineTo(xOf(yv), yOf(fv));
+      }
+      ctx.stroke();
+
+      // Guías punteadas desde U1 hasta Y
+      const px = xOf(c.y);
+      const py = yOf(c.u1);
+      ctx.save();
+      ctx.setLineDash([4, 3]);
+      ctx.strokeStyle = "#dc2626";
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(m.l, py); ctx.lineTo(px, py); ctx.lineTo(px, h - m.b);
+      ctx.stroke();
+      ctx.restore();
+
+      // Punto
+      ctx.fillStyle = "#dc2626";
+      ctx.beginPath(); ctx.arc(px, py, 4.5, 0, Math.PI * 2); ctx.fill();
+
+      // Etiquetas
+      ctx.fillStyle = "#475569";
+      ctx.font = "11px system-ui, sans-serif";
+      ctx.textAlign = "right";
+      ctx.fillText("1", m.l - 5, m.t + 4);
+      ctx.fillText("0", m.l - 5, h - m.b + 3);
+      ctx.fillStyle = "#dc2626";
+      ctx.font = "700 10px ui-monospace, monospace";
+      ctx.fillText("U₁", m.l - 5, py + 3);
+
+      ctx.textAlign = "center";
+      ctx.fillText(`Y=${c.y.toFixed(2)}`, Math.min(w - 28, Math.max(m.l + 24, px)), h - 8);
+      ctx.fillStyle = "#64748b";
+      ctx.font = "10px system-ui, sans-serif";
+      ctx.fillText("F_Y(y) = 1 − e^(−y/2)", m.l + pw * 0.62, m.t + 10);
+    }
+
+    // Gráfica 2: Barra de tramos de U2 en [0, 1]
+    function drawErratasPlot(c) {
+      const { ctx, w, h } = prepCanvas(document.getElementById("cErratas"));
+      const padL = 14, padR = 14;
+      const bw = w - padL - padR;
+      const barY = 54;
+      const barH = 44;
+
+      const segs = [
+        { s: 0, e: 0.10, lbl: "0", pts: 0, col: "#e2e8f0", txt: "#334155" }
+      ];
+      for (let k = 0; k < 7; k++) {
+        const s = 0.10 + k * STEP_ERR;
+        const e = 0.10 + (k + 1) * STEP_ERR;
+        const isAll = k === 6;
+        segs.push({
+          s, e,
+          lbl: isAll ? "T" : String(k + 1),
+          pts: isAll ? 4 : 1,
+          col: isAll ? "#bbf7d0" : "#fde68a",
+          txt: isAll ? "#166534" : "#92400e"
+        });
+      }
+
+      segs.forEach((seg, idx) => {
+        const x1 = padL + seg.s * bw;
+        const sw = (seg.e - seg.s) * bw;
+        ctx.fillStyle = seg.col;
+        ctx.fillRect(x1, barY, sw, barH);
+        ctx.strokeStyle = idx === c.errataIdx ? "#0f172a" : "#ffffff";
+        ctx.lineWidth = idx === c.errataIdx ? 2.5 : 1.5;
+        ctx.strokeRect(x1, barY, sw, barH);
+
+        ctx.fillStyle = seg.txt;
+        ctx.font = idx === c.errataIdx ? "700 12px system-ui, sans-serif" : "600 11px system-ui, sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(seg.lbl, x1 + sw / 2, barY + 20);
+        ctx.font = "10px ui-monospace, monospace";
+        ctx.fillText(`${seg.pts}p`, x1 + sw / 2, barY + 35);
+      });
+
+      // Aguja de U2
+      const ux = padL + c.u2 * bw;
+      ctx.strokeStyle = "#dc2626";
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.moveTo(ux, barY - 18); ctx.lineTo(ux, barY + barH + 14);
+      ctx.stroke();
+
+      ctx.fillStyle = "#dc2626";
+      ctx.beginPath();
+      ctx.moveTo(ux, barY - 4);
+      ctx.lineTo(ux - 5, barY - 13);
+      ctx.lineTo(ux + 5, barY - 13);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.font = "700 11px ui-monospace, monospace";
+      ctx.textAlign = "center";
+      ctx.fillText(`U₂ = ${c.u2.toFixed(4)}`, Math.min(w - 44, Math.max(44, ux)), barY - 24);
+
+      // Etiquetas de extremos
+      ctx.fillStyle = "#64748b";
+      ctx.font = "10px ui-monospace, monospace";
+      ctx.textAlign = "left"; ctx.fillText("0.00", padL, barY + barH + 28);
+      ctx.textAlign = "center"; ctx.fillText("0.10", padL + 0.10 * bw, barY + barH + 28);
+      ctx.textAlign = "right"; ctx.fillText("1.00", padL + bw, barY + barH + 28);
+    }
+
+    // Gráfica 3: Acumulada F2(x) con corte en (4, 2/3)
+    function drawF2Plot(c) {
+      const { ctx, w, h } = prepCanvas(document.getElementById("cF2"));
+      const m = { l: 38, r: 12, t: 14, b: 26 };
+      const pw = w - m.l - m.r;
+      const ph = h - m.t - m.b;
+      const xOf = (x) => m.l + (x / 8) * pw;
+      const yOf = (u) => m.t + ph - u * ph;
+
+      // Ejes
+      ctx.strokeStyle = "#94a3b8";
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(m.l, m.t); ctx.lineTo(m.l, h - m.b); ctx.lineTo(w - m.r, h - m.b);
+      ctx.stroke();
+
+      // Línea de corte U3 = 2/3
+      ctx.save();
+      ctx.setLineDash([3, 3]);
+      ctx.strokeStyle = "#cbd5e1";
+      ctx.beginPath();
+      ctx.moveTo(m.l, yOf(TWO_THIRDS)); ctx.lineTo(xOf(4), yOf(TWO_THIRDS));
+      ctx.lineTo(xOf(4), h - m.b);
+      ctx.stroke();
+      ctx.restore();
+
+      // Tramo 1: recta de (0,0) a (4, 2/3)
+      ctx.strokeStyle = "#7c3aed";
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      ctx.moveTo(xOf(0), yOf(0));
+      ctx.lineTo(xOf(4), yOf(TWO_THIRDS));
+      ctx.stroke();
+
+      // Tramo 2: parábola de (4, 2/3) a (8, 1)
+      ctx.strokeStyle = "#0ea5e9";
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      for (let i = 0; i <= 40; i++) {
+        const xv = 4 + (4 * i) / 40;
+        const fv = 1 - Math.pow(8 - xv, 2) / 48;
+        if (i === 0) ctx.moveTo(xOf(xv), yOf(fv));
+        else ctx.lineTo(xOf(xv), yOf(fv));
+      }
+      ctx.stroke();
+
+      // Guías punteadas desde U3 hasta X2
+      const px = xOf(c.x2);
+      const py = yOf(c.u3);
+      ctx.save();
+      ctx.setLineDash([4, 3]);
+      ctx.strokeStyle = "#dc2626";
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(m.l, py); ctx.lineTo(px, py); ctx.lineTo(px, h - m.b);
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.fillStyle = "#dc2626";
+      ctx.beginPath(); ctx.arc(px, py, 4.5, 0, Math.PI * 2); ctx.fill();
+
+      // Etiquetas
+      ctx.fillStyle = "#475569";
+      ctx.font = "10px ui-monospace, monospace";
+      ctx.textAlign = "right";
+      ctx.fillText("1", m.l - 5, m.t + 4);
+      ctx.fillText("2/3", m.l - 5, yOf(TWO_THIRDS) + 3);
+      ctx.fillText("0", m.l - 5, h - m.b + 3);
+
+      ctx.textAlign = "center";
+      ctx.fillText("4", xOf(4), h - m.b + 12);
+      ctx.fillText("8", xOf(8), h - m.b + 12);
+      ctx.fillStyle = "#dc2626";
+      ctx.font = "700 10px ui-monospace, monospace";
+      ctx.fillText(`X₂=${c.x2.toFixed(2)}`, Math.min(w - 30, Math.max(m.l + 28, px)), h - 4);
+    }
+
+    // -------------------------------------------------------------------------
+    // ACTUALIZACIÓN DE LA VISTA DE 1 CANDIDATO
+    // -------------------------------------------------------------------------
+    let currentU = { u1: 0.7129, u2: 0.5061, u3: 0.043 };
+
+    function renderSingle(u1, u2, u3) {
+      currentU = { u1, u2, u3 };
+      document.getElementById("u1Range").value = u1;
+      document.getElementById("u2Range").value = u2;
+      document.getElementById("u3Range").value = u3;
+      document.getElementById("u1Val").textContent = u1.toFixed(4);
+      document.getElementById("u2Val").textContent = u2.toFixed(4);
+      document.getElementById("u3Val").textContent = u3.toFixed(4);
+
+      const c = evalCandidate(u1, u2, u3);
+
+      // Tarjeta 1
+      document.getElementById("f1Text").innerHTML =
+        `Y = −2·ln(1 − ${c.u1.toFixed(4)}) = <strong>${c.y.toFixed(4)}</strong><br>` +
+        `X<sub>e</sub> = mín(2, 3(${c.y.toFixed(2)} + 1)) = mín(2, ${c.rawXe.toFixed(2)})`;
+      document.getElementById("xeOut").textContent = `Xₑ = ${c.xe}`;
+
+      // Tarjeta 2
+      document.getElementById("f2Text").innerHTML =
+        `Tramo: [${c.segStart.toFixed(4)}, ${c.segEnd.toFixed(4)})<br>` +
+        `Resultado: <strong>${c.errataLabel}</strong>`;
+      document.getElementById("x1Out").textContent = `X₁ = ${c.x1}`;
+
+      // Tarjeta 3
+      if (c.tramo2 === 1) {
+        document.getElementById("f3Text").innerHTML =
+          `U₃ ≤ 2/3 → <strong>Tramo 1</strong><br>` +
+          `X₂ = 6 · ${c.u3.toFixed(4)} = <strong>${c.x2.toFixed(4)}</strong>`;
+      } else {
+        document.getElementById("f3Text").innerHTML =
+          `U₃ &gt; 2/3 → <strong>Tramo 2</strong><br>` +
+          `X₂ = 8 − √(48·(1 − ${c.u3.toFixed(4)})) = <strong>${c.x2.toFixed(4)}</strong>`;
+      }
+      document.getElementById("x2Out").textContent = `X₂ = ${c.x2.toFixed(3)}`;
+
+      // Barra total
+      document.getElementById("sumEq").textContent =
+        `T = 2 + ${c.x1} + ${c.x2.toFixed(3)} = ${c.total.toFixed(3)}`;
+
+      const pct = Math.min(100, (c.total / 14) * 100);
+      const fill = document.getElementById("progFill");
+      fill.style.width = `${pct.toFixed(1)}%`;
+      fill.style.background = c.hired ? "var(--green)" : "var(--red)";
+
+      const badge = document.getElementById("decisionBadge");
+      if (c.hired) {
+        badge.textContent = "✓ CONTRATADO (H = 1)";
+        badge.className = "decision-pill dec-yes";
+      } else {
+        badge.textContent = "✗ NO CONTRATADO (H = 0)";
+        badge.className = "decision-pill dec-no";
+      }
+
+      drawExpPlot(c);
+      drawErratasPlot(c);
+      drawF2Plot(c);
+    }
+
+    // -------------------------------------------------------------------------
+    // SIMULACIÓN POR LOTES (250 / 1000 / 5000 CANDIDATOS)
+    // -------------------------------------------------------------------------
+    let lastBatch = [];
+
+    function runBatch() {
+      const n = Number(document.getElementById("batchSize").value) || 250;
+      const list = [];
+      let hiredCount = 0;
+
+      for (let i = 1; i <= n; i++) {
+        const u1 = Math.random();
+        const u2 = Math.random();
+        const u3 = Math.random();
+        const c = evalCandidate(u1, u2, u3);
+        c.idx = i;
+        if (c.hired) hiredCount++;
+        list.push(c);
+      }
+
+      lastBatch = list;
+      const pct = (hiredCount / n) * 100;
+
+      document.getElementById("kpiHired").textContent = hiredCount.toLocaleString("es-ES");
+      document.getElementById("kpiRejected").textContent = (n - hiredCount).toLocaleString("es-ES");
+      document.getElementById("kpiTotalSub").textContent = `de ${n.toLocaleString("es-ES")} candidatos`;
+      document.getElementById("kpiPct").textContent = `${pct.toFixed(2)} %`;
+
+      // Mapa de los primeros 250
+      const shown = list.slice(0, 250);
+      const grid = document.getElementById("dotsGrid");
+      grid.innerHTML = shown.map((c, idx) =>
+        `<div class="dot ${c.hired ? "hired" : "rejected"}" data-idx="${idx}" title="Candidato #${c.idx} · T = ${c.total.toFixed(2)} (${c.hired ? "Contratado" : "No contratado"})"></div>`
+      ).join("");
+
+      // Tabla de los primeros 250
+      const tbody = document.getElementById("batchTableBody");
+      tbody.innerHTML = shown.map((c, idx) => `
+        <tr class="row-click" data-idx="${idx}">
+          <td>${c.idx}</td>
+          <td>${c.u2.toFixed(4)}</td>
+          <td>${c.errataLabel}</td>
+          <td>${c.x1}</td>
+          <td>${c.u3.toFixed(4)}</td>
+          <td>${c.x2.toFixed(3)}</td>
+          <td><strong>${c.total.toFixed(3)}</strong></td>
+          <td class="${c.hired ? "tag-ok" : "tag-no"}">${c.hired}</td>
+        </tr>
+      `).join("");
+    }
+
+    function inspectFromBatch(idx) {
+      const c = lastBatch[idx];
+      if (!c) return;
+      renderSingle(c.u1, c.u2, c.u3);
+      document.querySelectorAll(".dot.selected").forEach(d => d.classList.remove("selected"));
+      const dot = document.querySelector(`.dot[data-idx="${idx}"]`);
+      if (dot) dot.classList.add("selected");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    // -------------------------------------------------------------------------
+    // EVENTOS
+    // -------------------------------------------------------------------------
+    document.getElementById("u1Range").addEventListener("input", (e) => renderSingle(Number(e.target.value), currentU.u2, currentU.u3));
+    document.getElementById("u2Range").addEventListener("input", (e) => renderSingle(currentU.u1, Number(e.target.value), currentU.u3));
+    document.getElementById("u3Range").addEventListener("input", (e) => renderSingle(currentU.u1, currentU.u2, Number(e.target.value)));
+
+    document.getElementById("btnRandomOne").addEventListener("click", () => {
+      renderSingle(Math.random(), Math.random(), Math.random());
+    });
+
+    document.getElementById("btnExampleC").addEventListener("click", () => {
+      renderSingle(0.7129, 0.5061, 0.043);
+    });
+
+    document.getElementById("btnRunBatch").addEventListener("click", runBatch);
+
+    document.getElementById("dotsGrid").addEventListener("click", (e) => {
+      const dot = e.target.closest(".dot[data-idx]");
+      if (dot) inspectFromBatch(Number(dot.dataset.idx));
+    });
+
+    document.getElementById("batchTableBody").addEventListener("click", (e) => {
+      const tr = e.target.closest("tr[data-idx]");
+      if (tr) inspectFromBatch(Number(tr.dataset.idx));
+    });
+
+    window.addEventListener("resize", () => renderSingle(currentU.u1, currentU.u2, currentU.u3));
+
+    // Inicio: cargar el ejemplo exacto del Inciso c y correr una tanda inicial de 250
+    renderSingle(0.7129, 0.5061, 0.043);
+    runBatch();
+  })();
+  </script>
+</body>
+</html>
